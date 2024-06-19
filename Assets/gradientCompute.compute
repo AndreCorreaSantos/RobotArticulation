@@ -1,19 +1,12 @@
-
 #pragma kernel CSMain
 
-float2 target;
+RWTexture2D<float4> Result; // Output texture
+float2 target;              // Target position
+float2 base_position;       // Base position of the robot arm
+float j1_length;            // Length of the first segment
+float j2_length;            // Length of the second segment
 
-
-float2 base_position;
-
-float j1_length;
-float j2_length;
-
-RWTexture2D<float4> Result;
-
-
-// forward kinematics --> function should receive two angles and joint positions and return the end effector position
-
+// Computes the end effector position based on given joint angles
 float2 forwardKinematics(float j1, float j2, float2 base_position, float j1_length, float j2_length)
 {
     float2 endPosition;
@@ -22,21 +15,21 @@ float2 forwardKinematics(float j1, float j2, float2 base_position, float j1_leng
     return endPosition;
 }
 
+// Calculates the Euclidean distance between two points
 float distance(float2 a, float2 b)
 {
-    return sqrt((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y));
+    return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
 
-[numthreads(8,8,1)] 
-// R is error
-// G is angle 1
-// B is angle 2
+[numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    float j1 = 0.0;
-    float j2 = 0.0;
-    float2 endPosition = forwardKinematics(j1, j2, base_position, j1_length, j2_length);
-    float error = distance(endPosition, target.xy);
+    float maxAngle = 6.28318530718; // 2 * PI
+    float j1 = (id.x / 255.0) * maxAngle; // Normalize by max thread index
+    float j2 = (id.y / 255.0) * maxAngle;
 
-    Result[id.xy] = float4(error, j1, j2, 1.0);
+    float2 endPosition = forwardKinematics(j1, j2, base_position, j1_length, j2_length);
+    float error = distance(endPosition, target);
+
+    Result[id.xy] = float4(error, j1, j2 , 1.0);
 }

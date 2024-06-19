@@ -23,7 +23,7 @@ public class jointController : MonoBehaviour
     private float rotationSpeed = 45;
     public float learningRate = 0.1f;
 
-    public bool shader = false;
+    public bool cpu = true;
 
     public Transform target;
 
@@ -49,15 +49,13 @@ public class jointController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (shader){
+        if (cpu){
             foreach (Joint joint in joints){ 
-
                 float input = Input.GetAxis(joint.jointAxis); // forward kinematics
                 if(Mathf.Abs(input) > 0){
                     float degrees = 1;
                     updateAngle(degrees,joint,input);
                 }
-
             }
         }else{
             inverseKinematics();
@@ -162,7 +160,7 @@ public class jointController : MonoBehaviour
 
         // Clean up
         RenderTexture.active = null;
-        Destroy(outputTexture);
+        Destroy(outputTexture); 
     }
 
 
