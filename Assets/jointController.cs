@@ -55,6 +55,10 @@ public class jointController : MonoBehaviour
         }else{
             inverseKinematics();
         }
+
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            ShaderInverseKinematics();
+        }
     }
 
 
@@ -113,6 +117,7 @@ public class jointController : MonoBehaviour
         int kernelIndex = gradientShader.FindKernel("CSMain");
 
         gradientShader.SetVector("target", target.position);
+        Debug.Log("target position: " + target.position);
         gradientShader.SetTexture(kernelIndex, "Result", renderTexture);
         gradientShader.Dispatch(kernelIndex, renderTexture.width / 8, renderTexture.height / 8, 1);
         SaveRenderTextureToPNG();
