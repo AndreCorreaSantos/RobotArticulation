@@ -792,6 +792,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2fb8bb6ca4b73e4da3e48756bc9d315, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gradientShader: {fileID: 7200000, guid: 588e21d86450c2d54bbc11a5ac63fcba, type: 3}
   joints:
   - jointAxis: Horizontal
     jointObject: {fileID: 434856740}
@@ -799,9 +800,11 @@ MonoBehaviour:
   - jointAxis: Vertical
     jointObject: {fileID: 913212877}
     rotationAxis: {x: 0, y: 0, z: 1}
+  learningRate: 0.1
   keyBoardInput: 0
   target: {fileID: 1468215744}
   endEffector: {fileID: 2061809121}
+  renderTexture: {fileID: 0}
 --- !u!1 &1955386844
 GameObject:
   m_ObjectHideFlags: 0
