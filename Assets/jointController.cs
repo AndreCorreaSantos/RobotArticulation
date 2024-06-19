@@ -13,11 +13,17 @@ public class Joint{
 public class jointController : MonoBehaviour
 {
     public ComputeShader gradientShader;
-    public Joint[] joints;
+
+    public Joint joint1;
+    public Joint joint2;
+
+    private List<Joint> joints;
+
+
     private float rotationSpeed = 45;
     public float learningRate = 0.1f;
 
-    public bool keyBoardInput = false;
+    public bool shader = false;
 
     public Transform target;
 
@@ -27,6 +33,7 @@ public class jointController : MonoBehaviour
 
     void Start() {
         // Initialize the RenderTexture
+        joints = new List<Joint> { joint1, joint2 };
         InitializeRenderTexture();
         ShaderInverseKinematics();
     }
@@ -42,7 +49,7 @@ public class jointController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (keyBoardInput){
+        if (shader){
             foreach (Joint joint in joints){ 
 
                 float input = Input.GetAxis(joint.jointAxis); // forward kinematics
@@ -114,9 +121,16 @@ public class jointController : MonoBehaviour
     public void ShaderInverseKinematics() {
         ClearRenderTexture(renderTexture, Color.clear);
 
+        float j1_length = Vector3.Distance(joint1.jointObject.transform.position, joint2.jointObject.transform.position);
+        float j2_length = Vector3.Distance(joint2.jointObject.transform.position, endEffector.position);
+
         int kernelIndex = gradientShader.FindKernel("CSMain");
 
         gradientShader.SetVector("target", target.position);
+        gradientShader.SetFloat("j1_length", j1_length);
+        gradientShader.SetFloat("j2_length", j2_length);
+        gradientShader.SetVector("base_position", joint1.jointObject.transform.position);
+
         Debug.Log("target position: " + target.position);
         gradientShader.SetTexture(kernelIndex, "Result", renderTexture);
         gradientShader.Dispatch(kernelIndex, renderTexture.width / 8, renderTexture.height / 8, 1);
@@ -150,48 +164,6 @@ public class jointController : MonoBehaviour
         RenderTexture.active = null;
         Destroy(outputTexture);
     }
-
-// private IEnumerator DrawPlane() {
-//     // Dispatch a compute shader to randomly sample points in the configuration space and calculate their gradient
-
-//     int kernelHandle = gradientShader.FindKernel("CSMain");
-//     RenderTexture tex = new RenderTexture(256, 256, 24);
-//     tex.enableRandomWrite = true;
-//     tex.Create();
-
-//     // Set the texture to the compute shader
-//     gradientShader.SetTexture(kernelHandle, "Result", tex);
-//     gradientShader.SetVector("targetPosition", target.position);
-//     gradientShader.SetVector("endEffectorPosition", endEffector.position);
-//     gradientShader.SetFloat("learningRate", 0.1f);
-    
-//     // Dispatch the compute shader
-//     int threadGroupsX = Mathf.CeilToInt(tex.width / 8f);
-//     int threadGroupsY = Mathf.CeilToInt(tex.height / 8f);
-//     gradientShader.Dispatch(kernelHandle, threadGroupsX, threadGroupsY, 1);
-
-//     // Wait for the shader to finish
-//     yield return new WaitForEndOfFrame();
-
-//     // Read the texture back to a Texture2D
-//     Texture2D tex2D = new Texture2D(tex.width, tex.height, TextureFormat.RGB24, false);
-//     RenderTexture.active = tex;
-//     tex2D.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
-//     tex2D.Apply();
-
-//     // Save the texture as a PNG file
-//     byte[] bytes = tex2D.EncodeToPNG();
-//     string filePath = Application.dataPath + "/../gradient.png";
-//     System.IO.File.WriteAllBytes(filePath, bytes);
-//     Debug.Log("Gradient image saved to: " + filePath);
-
-//     // Clean up
-//     tex.Release();
-//     RenderTexture.active = null;
-
-//     yield return null;
-// }
-
 
 
 }

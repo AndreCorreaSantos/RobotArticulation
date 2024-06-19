@@ -1,12 +1,42 @@
 
 #pragma kernel CSMain
 
-float4 target;
+float2 target;
+
+
+float2 base_position;
+
+float j1_length;
+float j2_length;
+
 RWTexture2D<float4> Result;
 
-[numthreads(8,8,1)]
+
+// forward kinematics --> function should receive two angles and joint positions and return the end effector position
+
+float2 forwardKinematics(float j1, float j2, float2 base_position, float j1_length, float j2_length)
+{
+    float2 endPosition;
+    endPosition.x = base_position.x + j1_length * cos(j1) + j2_length * cos(j1 + j2);
+    endPosition.y = base_position.y + j1_length * sin(j1) + j2_length * sin(j1 + j2);
+    return endPosition;
+}
+
+float distance(float2 a, float2 b)
+{
+    return sqrt((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y));
+}
+
+[numthreads(8,8,1)] 
+// R is error
+// G is angle 1
+// B is angle 2
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
+    float j1 = 0.0;
+    float j2 = 0.0;
+    float2 endPosition = forwardKinematics(j1, j2, base_position, j1_length, j2_length);
+    float error = distance(endPosition, target.xy);
 
-    Result[id.xy] = target*100.0f;
+    Result[id.xy] = float4(error, j1, j2, 1.0);
 }
