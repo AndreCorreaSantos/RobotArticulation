@@ -16,14 +16,11 @@ public class jointController : MonoBehaviour
 
     public Joint joint1;
     public Joint joint2;
-
     private List<Joint> joints;
-
-
     private float rotationSpeed = 45;
     public float learningRate = 0.1f;
 
-    public bool cpu = true;
+    public bool keyboard = true;
 
     public Transform target;
 
@@ -31,10 +28,16 @@ public class jointController : MonoBehaviour
 
     public RenderTexture renderTexture;
 
+    public RenderTexture debugTexture;
+
+    public GameObject gradientPlane;
+    public bool shader = false;
+
     void Start() {
         // Initialize the RenderTexture
         joints = new List<Joint> { joint1, joint2 };
         InitializeRenderTexture();
+        InitializeDebugTexture();
         ShaderInverseKinematics();
     }
 
@@ -44,12 +47,18 @@ public class jointController : MonoBehaviour
         renderTexture.Create();
     }
 
+    void InitializeDebugTexture() {
+        debugTexture = new RenderTexture(256, 256, 0, RenderTextureFormat.ARGB32);
+        debugTexture.enableRandomWrite = true;
+        debugTexture.Create();
+    }
+
 
 
     // Update is called once per frame
     void Update()
     {
-        if (cpu){
+        if (keyboard){
             foreach (Joint joint in joints){ 
                 float input = Input.GetAxis(joint.jointAxis); // forward kinematics
                 if(Mathf.Abs(input) > 0){
@@ -57,6 +66,9 @@ public class jointController : MonoBehaviour
                     updateAngle(degrees,joint,input);
                 }
             }
+        }else if(shader){
+            // Debug.Log("Shader");
+            ShaderInverseKinematics();
         }else{
             inverseKinematics();
         }
@@ -119,21 +131,90 @@ public class jointController : MonoBehaviour
     public void ShaderInverseKinematics() {
         ClearRenderTexture(renderTexture, Color.clear);
 
-        float j1_length = Vector3.Distance(joint1.jointObject.transform.position, joint2.jointObject.transform.position);
-        float j2_length = Vector3.Distance(joint2.jointObject.transform.position, endEffector.position);
+        Vector2 tpos = new Vector2(target.position.x, target.position.y);
+        Vector2 j1pos = joint1.jointObject.transform.position;
+        Vector2 j2pos = joint2.jointObject.transform.position;
+        Vector2 base_position = joint1.jointObject.transform.position;
+        Vector2 end_position = endEffector.position;
+
+        float j1_length = Vector2.Distance(j1pos, j2pos);
+        float j2_length = Vector2.Distance(j2pos, end_position);
 
         int kernelIndex = gradientShader.FindKernel("CSMain");
 
-        gradientShader.SetVector("target", target.position);
+        Debug.Log($"Target Position, before setting: {tpos}");
+        gradientShader.SetVector("target", tpos);
         gradientShader.SetFloat("j1_length", j1_length);
         gradientShader.SetFloat("j2_length", j2_length);
-        gradientShader.SetVector("base_position", joint1.jointObject.transform.position);
+        gradientShader.SetVector("base_position", base_position);
 
-        Debug.Log("target position: " + target.position);
+
         gradientShader.SetTexture(kernelIndex, "Result", renderTexture);
+        gradientShader.SetTexture(kernelIndex, "Debug", debugTexture);
+
         gradientShader.Dispatch(kernelIndex, renderTexture.width / 8, renderTexture.height / 8, 1);
-        SaveRenderTextureToPNG();
+
+        // Read back debug and find the best angles
+        RenderTexture.active = debugTexture;
+        Texture2D readTexture = new Texture2D(debugTexture.width, debugTexture.height, TextureFormat.RGBAFloat, false);
+        readTexture.ReadPixels(new Rect(0, 0, debugTexture.width, debugTexture.height), 0, 0);
+        readTexture.Apply();
+        RenderTexture.active = null;
+
+        Vector2 targetPos = new Vector2(readTexture.GetPixel(0, 0).r, readTexture.GetPixel(0, 0).g)*20.0f;
+        
+        targetPos.x = targetPos.x - 10;
+        targetPos.y = targetPos.y - 10;
+        Debug.Log($"Target Position Shader: {targetPos}, True Target Position: {tpos}");
+        
+
+        // Read back result texture and find the best angles
+        RenderTexture.active = renderTexture;
+        readTexture = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGBAFloat, false);
+        readTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+        readTexture.Apply();
+        RenderTexture.active = null;
+
+
+
+        float minError = float.MaxValue;
+        float bestJ1 = 0, bestJ2 = 0;
+
+        float maxJ1 = 0;
+        float maxJ2 = 0;
+        for (int i = 0; i < readTexture.width; i++) {
+            for (int j = 0; j < readTexture.height; j++) {
+                Color pixel = readTexture.GetPixel(i, j);
+                if (pixel.r > maxJ1) {
+                    maxJ1 = pixel.r;
+                }
+                if (pixel.g > maxJ2) {
+                    maxJ2 = pixel.g;
+                }
+                if (pixel.r < minError) {
+                    minError = pixel.r;
+                    bestJ1 = pixel.g; // Angles in radians
+                    bestJ2 = pixel.b;
+                }
+            }
+        }
+        Debug.Log($"Max J1: {maxJ1*360.0}, Max J2: {maxJ2*360.0}");
+
+        // Convert radians to degrees
+        bestJ1 = bestJ1*360f;
+        bestJ2 = bestJ2*360f;
+
+        // Apply rotations to joints
+        joint1.jointObject.transform.localRotation = Quaternion.Euler(0, 0, bestJ1); // Assuming rotation around Y-axis
+        joint2.jointObject.transform.localRotation = Quaternion.Euler(0, 0, bestJ2); // Adjust axis as necessary
+
+        // Debug.Log($"Applied rotations - Joint1: {bestJ1} degrees, Joint2: {bestJ2} degrees");
+
+        // Clean up
+        Destroy(readTexture);
     }
+
+
 
     private void SaveRenderTextureToPNG() {
         // Ensure the RenderTexture is active
