@@ -43,7 +43,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float error = distance(endPosition, target);
 
     // normalize j1, j2 and error
-    j1 = rad2deg(j1)/maxAngle;
+    j1 = (rad2deg(j1)-90)/maxAngle;
     j2 = rad2deg(j2)/maxAngle;
 
     Debug[id.xy] = float4((target.r+10.0)/20.0,(target.g+10.0)/20.0,1.0, 1.0);

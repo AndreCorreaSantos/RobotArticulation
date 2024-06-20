@@ -142,7 +142,7 @@ public class jointController : MonoBehaviour
 
         int kernelIndex = gradientShader.FindKernel("CSMain");
 
-        Debug.Log($"Target Position, before setting: {tpos}");
+        // Debug.Log($"Target Position, before setting: {tpos}");
         gradientShader.SetVector("target", tpos);
         gradientShader.SetFloat("j1_length", j1_length);
         gradientShader.SetFloat("j2_length", j2_length);
@@ -161,11 +161,7 @@ public class jointController : MonoBehaviour
         readTexture.Apply();
         RenderTexture.active = null;
 
-        Vector2 targetPos = new Vector2(readTexture.GetPixel(0, 0).r, readTexture.GetPixel(0, 0).g)*20.0f;
-        
-        targetPos.x = targetPos.x - 10;
-        targetPos.y = targetPos.y - 10;
-        Debug.Log($"Target Position Shader: {targetPos}, True Target Position: {tpos}");
+    
         
 
         // Read back result texture and find the best angles
@@ -198,11 +194,12 @@ public class jointController : MonoBehaviour
                 }
             }
         }
-        Debug.Log($"Max J1: {maxJ1*360.0}, Max J2: {maxJ2*360.0}");
+        // Debug.Log($"Max J1: {maxJ1*360.0}, Max J2: {maxJ2*360.0}");
 
-        // Convert radians to degrees
         bestJ1 = bestJ1*360f;
         bestJ2 = bestJ2*360f;
+
+        Debug.Log(bestJ1);
 
         // Apply rotations to joints
         joint1.jointObject.transform.localRotation = Quaternion.Euler(0, 0, bestJ1); // Assuming rotation around Y-axis
