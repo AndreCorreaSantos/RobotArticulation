@@ -23,6 +23,7 @@ Shader "Unlit/gradientDisplacement"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+                float4 error : TEXCOORD1;
             };
 
             struct v2f
@@ -48,7 +49,7 @@ Shader "Unlit/gradientDisplacement"
             {
                 // sample the texture
                 fixed4 col = tex2D(_MainTex, i.uv);
-                fixed4 error = fixed4(_ErrorTexture,i.uv);
+
                 
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);

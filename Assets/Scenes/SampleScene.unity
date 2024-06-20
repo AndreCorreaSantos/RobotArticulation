@@ -184,7 +184,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: d1dd3f7abb46982f0b1ef2975378e3ab, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -911,7 +911,7 @@ MonoBehaviour:
   keyboard: 0
   target: {fileID: 1468215744}
   endEffector: {fileID: 2061809121}
-  renderTexture: {fileID: 0}
+  renderTexture: {fileID: 8400000, guid: a46c324e418fd5c53b08f9c374996db2, type: 2}
   debugTexture: {fileID: 0}
   gradientPlane: {fileID: 161623711}
   shader: 1

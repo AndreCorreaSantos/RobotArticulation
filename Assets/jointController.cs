@@ -26,12 +26,14 @@ public class jointController : MonoBehaviour
 
     public Transform endEffector;
 
-    public RenderTexture renderTexture;
+    private RenderTexture renderTexture;
 
-    public RenderTexture debugTexture;
+    private RenderTexture debugTexture;
 
     public GameObject gradientPlane;
     public bool shader = false;
+
+    public Material gradientDisplacementMaterial;
 
     void Start() {
         // Initialize the RenderTexture
@@ -45,6 +47,8 @@ public class jointController : MonoBehaviour
         renderTexture = new RenderTexture(256, 256, 0, RenderTextureFormat.ARGB32);
         renderTexture.enableRandomWrite = true;
         renderTexture.Create();
+        // Set the RenderTexture as the main texture of the gradientPlane
+        gradientDisplacementMaterial.SetTexture("_MainTex", renderTexture);
     }
 
     void InitializeDebugTexture() {
@@ -71,10 +75,6 @@ public class jointController : MonoBehaviour
             ShaderInverseKinematics();
         }else{
             inverseKinematics();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            ShaderInverseKinematics();
         }
     }
 
@@ -142,7 +142,7 @@ public class jointController : MonoBehaviour
 
         int kernelIndex = gradientShader.FindKernel("CSMain");
 
-        // Debug.Log($"Target Position, before setting: {tpos}");
+        Debug.Log($"Target Position, before setting: {tpos}");
         gradientShader.SetVector("target", tpos);
         gradientShader.SetFloat("j1_length", j1_length);
         gradientShader.SetFloat("j2_length", j2_length);
@@ -199,14 +199,14 @@ public class jointController : MonoBehaviour
         bestJ1 = bestJ1*360f;
         bestJ2 = bestJ2*360f;
 
-        Debug.Log(bestJ1);
-
         // Apply rotations to joints
         joint1.jointObject.transform.localRotation = Quaternion.Euler(0, 0, bestJ1); // Assuming rotation around Y-axis
         joint2.jointObject.transform.localRotation = Quaternion.Euler(0, 0, bestJ2); // Adjust axis as necessary
 
         // Debug.Log($"Applied rotations - Joint1: {bestJ1} degrees, Joint2: {bestJ2} degrees");
-
+        if(Input.GetKeyDown(KeyCode.Space)){
+            SaveRenderTextureToPNG();
+        }
         // Clean up
         Destroy(readTexture);
     }
@@ -240,7 +240,5 @@ public class jointController : MonoBehaviour
         RenderTexture.active = null;
         Destroy(outputTexture); 
     }
-
-
 }
 
